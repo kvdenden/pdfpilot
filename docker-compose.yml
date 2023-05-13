@@ -1,0 +1,43 @@
+version: '3'
+
+services:
+  next-app:
+    container_name: pdfpilot
+    build:
+      context: .
+    environment:
+      S3_ENDPOINT: http://minio:9000
+      AWS_ACCESS_KEY_ID: root
+      AWS_SECRET_ACCESS_KEY: password
+    volumes:
+      - .:/app
+    restart: always
+    ports:
+      - 3000:3000
+    networks:
+      - my_network
+    depends_on:
+      - minio
+  minio:
+    image: 'minio/minio:latest'
+    ports:
+      - '9000:9000'
+      - '9090:9090'
+    environment:
+      MINIO_ROOT_USER: 'root'
+      MINIO_ROOT_PASSWORD: 'password'
+    volumes:
+      - 'minio:/data/minio'
+    networks:
+      - my_network
+    command: minio server /data/minio --console-address ":9090"
+
+volumes:
+  minio:
+    driver: local
+
+# Define a network, which allows containers to communicate
+# with each other, by using their container name as a hostname
+networks:
+  my_network:
+    external: true
