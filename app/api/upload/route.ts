@@ -2,7 +2,11 @@ import { S3Client, PutObjectCommand, HeadObjectCommand } from '@aws-sdk/client-s
 import { NextRequest, NextResponse } from 'next/server'
 import { randomUUID } from 'crypto'
 
-const s3Client = new S3Client({})
+const s3Client = new S3Client({
+  endpoint: process.env.S3_ENDPOINT,
+  region: process.env.AWS_REGION || process.env.AWS_DEFAULT_REGION || 'us-east-1',
+  forcePathStyle: true,
+})
 
 function s3Key(id: string) {
   return `uploads/${id}.pdf`
@@ -10,7 +14,7 @@ function s3Key(id: string) {
 
 function s3Url(id: string) {
   const key = s3Key(id)
-  return `https://${process.env.S3_BUCKET_NAME}.s3.amazonaws.com/${key}`
+  return `${process.env.S3_ENDPOINT || 'https://s3.amazonaws.com'}/${process.env.S3_BUCKET_NAME}/${key}` // TODO: fix
 }
 
 export async function POST(req: NextRequest, res: NextResponse) {
