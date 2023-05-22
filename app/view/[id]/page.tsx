@@ -1,21 +1,22 @@
 // @ts-nocheck
 'use client'
-
+import 'react-chat-elements/dist/main.css'
 import { useState, useRef } from 'react'
 import { useParams } from 'next/navigation'
-import { Box, Text, Input, NumberInput, NumberInputField } from '@chakra-ui/react'
+import { Box, Heading, Text, Input, NumberInput, NumberInputField, Spinner, Flex } from '@chakra-ui/react'
 import SplitPane from 'react-split-pane'
 import { Document, Page } from 'react-pdf/dist/esm/entry.webpack5'
 import { InView } from 'react-intersection-observer'
 
 import useWindowSize from '@/hooks/useWindowSize'
-
+import UploadButton from '@/components/UploadButton'
+import Chat from '@/components/Chat'
 interface Size {
   width: number | undefined
   height: number | undefined
 }
 
-export default function Home() {
+export default function View() {
   const [numPages, setNumPages] = useState<number | null>(null)
   const [pageNumber, setPageNumber] = useState<number | ''>(1)
   const params = useParams()
@@ -42,13 +43,47 @@ export default function Home() {
     }
   }
 
+  const ErrorMessage = () => {
+    return (
+      <Flex flexDirection={'column'} py={16} w={'full'} h={'full'} align="center" justify="center" my={'auto'}>
+        <Heading textAlign={'center'} mb={8}>
+          Failed to load pdf
+        </Heading>
+        <UploadButton />
+      </Flex>
+    )
+  }
+  const LoadingMessage = () => {
+    return (
+      <Flex w={'full'} h={'full'} align="center" justify="center">
+        <Spinner thickness="4px" speed="0.65s" emptyColor="gray.200" color="green.500" size="xl" />
+      </Flex>
+    )
+  }
+
+  if (size.width == undefined) {
+    return (
+      <Flex w={'full'} h={'full'} align="center" justify="center">
+        <Spinner thickness="4px" speed="0.65s" emptyColor="gray.200" color="green.500" size="xl" />
+      </Flex>
+    )
+  }
   return (
-    <main style={{ minHeight: `100vh` }}>
+    <main
+      h="full"
+      position="relative"
+      style={{
+        height: `${size.height - 60}px`,
+      }}
+    >
       <SplitPane
         split={size?.width >= 768 ? 'vertical' : 'horizontal'}
         maxSize={-80}
         defaultSize={400}
-        pane1Style={{ overflow: 'hidden' }}
+        minSize={size.width > 768 ? 400 : '100%'}
+        style={{ backgroundColor: '#22543D' }}
+        pane1Style={{ overflowY: 'scroll' }}
+        pane2Style={{ overflowY: 'hidden' }}
         resizerStyle={{
           backgroundColor: 'lightgray',
           minWidth: 8,
@@ -56,90 +91,89 @@ export default function Home() {
           cursor: `${size?.width >= 768 ? 'col-resize' : 'row-resize'}`,
         }}
       >
-        <Box position={'relative'} overflow={'hidden'} bg="green.800" w={'full'}>
-          <Box w={'full'} p={0} m={0}>
-            <Box w={'full'}>
-              <Box width={'full'} px={4} borderTopRadius={'lg'} bg="green.800" zIndex={10} position={'sticky'} top={0}>
-                <Box
-                  display={'flex'}
-                  alignItems={'center'}
-                  borderTopRadius={'lg'}
-                  justifyContent={'center'}
-                  bg="gray.800"
-                  py={2}
-                  marginTop={4}
-                >
-                  <NumberInput
-                    max={numPages ?? 0}
-                    size="lg"
-                    w={20}
-                    px={0}
-                    min={1}
-                    value={pageNumber}
-                    onChange={(_, pageNumber) => {
-                      if (Number.isNaN(pageNumber)) {
-                        setPageNumber('')
-                      } else {
-                        setPageNumber(pageNumber)
-                        scrollToPage(pageNumber)
-                      }
-                    }}
+        <Box position={'relative'} h={'full'} w={'full'}>
+          <Box w={'full'} p={0} m={0} h={'full'}>
+            <Box w={'full'} bg="gray.600" h={'full'} position={'relative'} overflowY={'scroll'}>
+              <>
+                {numPages && (
+                  <Box
+                    width={'full'}
+                    px={4}
+                    borderTopRadius={'lg'}
+                    pt={4}
+                    zIndex={10}
+                    position={'sticky'}
+                    bg="gray.600"
+                    top={0}
                   >
-                    <NumberInputField />
-                  </NumberInput>
-                  <Text ml={4}>of {numPages}</Text>
-                </Box>
-              </Box>
-              <Document
-                className="pdfdocument"
-                file={`http://localhost:9000/pdfpilot/uploads/${params.id}.pdf`}
-                onLoadSuccess={onDocumentLoadSuccess}
-                options={options}
-                inputRef={pdfContainerRef}
-              >
-                {Array.from(new Array(numPages), (el, index) => {
-                  return (
-                    <InView
-                      as="div"
-                      key={`page_${index + 1}`}
-                      onChange={(inView, entry) => {
-                        inView && setPageNumber(index + 1)
-                      }}
-                      threshold={0.5}
+                    <Box
+                      display={'flex'}
+                      alignItems={'center'}
+                      borderTopRadius={'lg'}
+                      justifyContent={'center'}
+                      bg="gray.800"
+                      py={2}
                     >
-                      {({ inView, ref, entry }) => (
-                        <Page
-                          renderAnnotationLayer={false}
-                          renderTextLayer={false}
-                          key={`page_${index + 1}`}
-                          pageNumber={index + 1}
-                          className="pdfpage"
-                          inputRef={ref}
-                        />
-                      )}
-                    </InView>
-                  )
-                })}
-              </Document>
+                      <NumberInput
+                        max={numPages ?? 0}
+                        size="lg"
+                        w={20}
+                        px={0}
+                        min={1}
+                        value={pageNumber}
+                        onChange={(_, pageNumber) => {
+                          if (Number.isNaN(pageNumber)) {
+                            setPageNumber('')
+                          } else {
+                            setPageNumber(pageNumber)
+                            scrollToPage(pageNumber)
+                          }
+                        }}
+                      >
+                        <NumberInputField />
+                      </NumberInput>
+                      <Text ml={4}>of {numPages}</Text>
+                    </Box>
+                  </Box>
+                )}
+                <Document
+                  className="pdfdocument"
+                  file={`http://localhost:9000/pdfpilot/uploads/${params.id}.pdf`}
+                  onLoadSuccess={onDocumentLoadSuccess}
+                  options={options}
+                  inputRef={pdfContainerRef}
+                  error={<ErrorMessage />}
+                  loading={LoadingMessage}
+                >
+                  {Array.from(new Array(numPages), (el, index) => {
+                    return (
+                      <InView
+                        as="div"
+                        key={`page_${index + 1}`}
+                        onChange={(inView, entry) => {
+                          inView && setPageNumber(index + 1)
+                        }}
+                        threshold={0.5}
+                      >
+                        {({ inView, ref, entry }) => (
+                          <Page
+                            renderAnnotationLayer={false}
+                            renderTextLayer={false}
+                            key={`page_${index + 1}`}
+                            pageNumber={index + 1}
+                            className="pdfpage"
+                            inputRef={ref}
+                          />
+                        )}
+                      </InView>
+                    )
+                  })}
+                </Document>
+              </>
             </Box>
           </Box>
         </Box>
-        <Box display={'flex'} flexDirection={'column'} w={'full'} h={'full'}>
-          <Box h={'full'} bg="green.400" p={4}>
-            <Box h={'full'} bg={'white'} borderRadius={'lg'} border={'1px solid black'}></Box>
-          </Box>
-          <Box p={4} bg="green.600">
-            <Input
-              placeholder="Ask a question"
-              type="text"
-              border={'1px solid black'}
-              _hover={{ border: '1px solid black' }}
-              backgroundColor={'white'}
-              color={'black'}
-              size={'lg'}
-            />
-          </Box>
-        </Box>
+        <Chat />
       </SplitPane>
     </main>
   )
