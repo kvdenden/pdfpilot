@@ -25,7 +25,7 @@ export async function POST(req: NextRequest, res: NextResponse) {
     },
   })
 
-  const chain = RetrievalQAChain.fromLLM(model, vectorStore.asRetriever())
+  const chain = RetrievalQAChain.fromLLM(model, vectorStore.asRetriever(4, { documentId: id }))
 
   const response = await chain.call({
     query,

@@ -54,7 +54,7 @@ export async function POST(req: NextRequest, res: NextResponse) {
   })
 
   await vectorStore.addModels(
-    await db.$transaction(docs.map((doc) => db.document.create({ data: { content: doc.pageContent } }))) // TODO: add document id and location: { pageNumber: 1, lines: { from: 1, to: 47 } }
+    await db.$transaction(docs.map((doc) => db.document.create({ data: { documentId: id, content: doc.pageContent } }))) // TODO: add location: { pageNumber: 1, lines: { from: 1, to: 47 } }
   )
 
   const chain = RetrievalQAChain.fromLLM(model, vectorStore.asRetriever())

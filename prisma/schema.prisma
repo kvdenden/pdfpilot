@@ -6,14 +6,15 @@ generator client {
 }
 
 datasource db {
-  provider  = "postgresql"
-  url       = env("DATABASE_URL")
-  directUrl = env("MIGRATION_DATABASE_URL")
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
 }
 
 model Document {
-  id         String                @id @default(cuid())
+  id         String                 @id @default(cuid())
   documentId String
   content    String
-  vector     Unsupported("vector")
+  vector     Unsupported("vector")?
+
+  @@index([documentId])
 }
