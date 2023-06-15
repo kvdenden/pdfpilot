@@ -1,6 +1,14 @@
 import { S3Client, PutObjectCommand, HeadObjectCommand } from '@aws-sdk/client-s3'
 import { NextRequest, NextResponse } from 'next/server'
 import { randomUUID } from 'crypto'
+import { OpenAI } from 'langchain/llms/openai'
+import { OpenAIEmbeddings } from 'langchain/embeddings/openai'
+import { PDFLoader } from 'langchain/document_loaders/fs/pdf'
+import { RecursiveCharacterTextSplitter } from 'langchain/text_splitter'
+import { PrismaVectorStore } from 'langchain/vectorstores/prisma'
+import { PrismaClient, Prisma, Document } from '@prisma/client'
+
+import { RetrievalQAChain } from 'langchain/chains'
 
 const s3Client = new S3Client({
   endpoint: process.env.S3_ENDPOINT,
@@ -13,8 +21,8 @@ function s3Key(id: string) {
 }
 
 function s3Url(id: string) {
-  const key = s3Key(id)
-  return `${process.env.S3_ENDPOINT || 'https://s3.amazonaws.com'}/${process.env.S3_BUCKET_NAME}/${key}` // TODO: fix
+  const endpoint = process.env.PUBLIC_S3_ENDPOINT || process.env.S3_ENDPOINT || 'https://s3.amazonaws.com'
+  return `${endpoint}/${process.env.S3_BUCKET_NAME}/${s3Key(id)}`
 }
 
 export async function POST(req: NextRequest, res: NextResponse) {
@@ -27,6 +35,34 @@ export async function POST(req: NextRequest, res: NextResponse) {
   const id = randomUUID()
   const buffer = await file.arrayBuffer()
 
+  const model = new OpenAI()
+  const loader = new PDFLoader(file)
+
+  const textSplitter = new RecursiveCharacterTextSplitter()
+  const docs = await loader.loadAndSplit(textSplitter)
+
+  const db = new PrismaClient()
+
+  const vectorStore = PrismaVectorStore.withModel<Document>(db).create(new OpenAIEmbeddings(), {
+    prisma: Prisma,
+    tableName: 'Document',
+    vectorColumnName: 'vector',
+    columns: {
+      id: PrismaVectorStore.IdColumn,
+      content: PrismaVectorStore.ContentColumn,
+    },
+  })
+
+  await vectorStore.addModels(
+    await db.$transaction(docs.map((doc) => db.document.create({ data: { content: doc.pageContent } }))) // TODO: add document id and location: { pageNumber: 1, lines: { from: 1, to: 47 } }
+  )
+
+  const chain = RetrievalQAChain.fromLLM(model, vectorStore.asRetriever())
+
+  const summary = await chain.call({
+    query: 'Extract the key insights from this text.',
+  })
+
   await s3Client.send(
     new PutObjectCommand({
       Bucket: process.env.S3_BUCKET_NAME,
@@ -36,7 +72,7 @@ export async function POST(req: NextRequest, res: NextResponse) {
     })
   )
 
-  return NextResponse.json({ id, url: s3Url(id) })
+  return NextResponse.json({ id, url: s3Url(id), summary })
 }
 
 export async function GET(req: NextRequest, res: NextResponse) {
