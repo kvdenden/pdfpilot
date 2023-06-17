@@ -23,6 +23,8 @@ export default function View() {
   const pdfContainerRef = useRef(null)
   const size: Size = useWindowSize()
 
+  const documentUrl = `/api/upload?id=${params.id}`
+
   const options = {
     cMapUrl: 'cmaps/',
     standardFontDataUrl: 'standard_fonts/',
@@ -138,7 +140,7 @@ export default function View() {
                 )}
                 <Document
                   className="pdfdocument"
-                  file={`http://localhost:9000/pdfpilot/uploads/${params.id}.pdf`}
+                  file={documentUrl}
                   onLoadSuccess={onDocumentLoadSuccess}
                   options={options}
                   inputRef={pdfContainerRef}

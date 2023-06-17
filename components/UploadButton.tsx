@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { Box, Heading, Container, Text, Button, Stack, Input } from '@chakra-ui/react'
 interface FileDetails extends Blob {
@@ -23,29 +23,36 @@ export default function UploadButton() {
   const handleFileSelect = (event: any) => {
     const file = event.target.files[0]
     setSelectedFile(file)
-    handleFileUpload()
-  }
-  const handleFileUpload = () => {
-    if (!selectedFile) {
-      return
-    }
-    setLoading(true)
-    const data = new FormData()
-    data.append('file', selectedFile, selectedFile.name)
-    fetch('/api/upload', {
-      method: 'POST',
-      body: data,
-    }).then((response) => {
-      response.json().then((data) => {
-        router.push(`/view/${data.id}`)
-      })
-      setLoading(false)
-    })
+    handleFileUpload(file)
   }
 
+  const handleFileUpload = useCallback(
+    (file: FileDetails) => {
+      if (!file) {
+        return
+      }
+      setLoading(true)
+      const data = new FormData()
+      data.append('file', file, file.name)
+      fetch('/api/upload', {
+        method: 'POST',
+        body: data,
+      }).then((response) => {
+        response.json().then((data) => {
+          console.log(data)
+          router.push(`/view/${data.id}`)
+        })
+        setLoading(false)
+      })
+    },
+    [router]
+  )
+
   useEffect(() => {
-    handleFileUpload()
-  }, [selectedFile])
+    if (selectedFile) {
+      handleFileUpload(selectedFile)
+    }
+  }, [handleFileUpload, selectedFile])
 
   return (
     <>
