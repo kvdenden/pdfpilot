@@ -1,26 +1,26 @@
 version: '3'
 
 services:
-  next-app:
-    container_name: pdfpilot
-    build:
-      context: .
-    environment:
-      DATABASE_URL: postgres://postgres:password@db:5432/pdfpilot
-      S3_ENDPOINT: http://minio:9000
-      PUBLIC_S3_ENDPOINT: http://localhost:9000
-      AWS_ACCESS_KEY_ID: root
-      AWS_SECRET_ACCESS_KEY: password
-    volumes:
-      - .:/app
-    restart: always
-    ports:
-      - 3000:3000
-    networks:
-      - my_network
-    depends_on:
-      - minio
-      - db
+  # next-app:
+  #   container_name: pdfpilot
+  #   build:
+  #     context: .
+  #   environment:
+  #     DATABASE_URL: postgres://postgres:password@db:5432/pdfpilot
+  #     S3_ENDPOINT: http://minio:9000
+  #     PUBLIC_S3_ENDPOINT: http://localhost:9000
+  #     AWS_ACCESS_KEY_ID: root
+  #     AWS_SECRET_ACCESS_KEY: password
+  #   volumes:
+  #     - .:/app
+  #   restart: always
+  #   ports:
+  #     - 3000:3000
+  #   networks:
+  #     - my_network
+  #   depends_on:
+  #     - minio
+  #     - db
   minio:
     image: 'minio/minio:latest'
     ports:
@@ -39,9 +39,9 @@ services:
     ports:
       - '5432:5432'
     environment:
-      POSTGRES_USER:
-      POSTGRES_PASSWORD:
-      POSTGRES_DB:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: pdfpilot
     volumes:
       - db:/var/lib/postgresql/data
     networks:
