@@ -175,7 +175,7 @@ export default function View() {
             </Box>
           </Box>
         </Box>
-        <Chat />
+        <Chat id={params.id} />
       </SplitPane>
     </main>
   )
