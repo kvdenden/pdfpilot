@@ -5,79 +5,43 @@ import { useState, useRef, useEffect } from 'react'
 import { MessageList, Input, Button } from 'react-chat-elements'
 import { Box } from '@chakra-ui/react'
 
-export default function Chat() {
-  const [messages, setMessages] = useState<any[]>([
-    {
-      position: 'right',
-      type: 'text',
-      title: 'User',
-      text: 'How can PDFPilot help me analyze my research papers?',
-    },
-    {
-      position: 'left',
-      type: 'text',
-      title: 'PDF Pilot',
-      text: 'Our app allows you to ask questions, extract key information, and delve deeper into the content of your PDFs. Whether you need to quickly find relevant sections, summarize complex concepts, or uncover hidden insights, PDFPilot has got you covered. Get ready to navigate your documents with ease and unlock a whole new level of document analysis!',
-    },
-    {
-      position: 'right',
-      type: 'text',
-      title: 'User',
-      text: 'How can PDFPilot help me analyze my research papers?',
-    },
-    {
-      position: 'left',
-      type: 'text',
-      title: 'PDF Pilot',
-      text: 'Our app allows you to ask questions, extract key information, and delve deeper into the content of your PDFs. Whether you need to quickly find relevant sections, summarize complex concepts, or uncover hidden insights, PDFPilot has got you covered. Get ready to navigate your documents with ease and unlock a whole new level of document analysis!',
-    },
-    {
-      position: 'right',
-      type: 'text',
-      title: 'User',
-      text: 'How can PDFPilot help me analyze my research papers?',
-    },
-    {
-      position: 'left',
-      type: 'text',
-      title: 'PDF Pilot',
-      text: 'Our app allows you to ask questions, extract key information, and delve deeper into the content of your PDFs. Whether you need to quickly find relevant sections, summarize complex concepts, or uncover hidden insights, PDFPilot has got you covered. Get ready to navigate your documents with ease and unlock a whole new level of document analysis!',
-    },
-    {
-      position: 'right',
-      type: 'text',
-      title: 'User',
-      text: 'How can PDFPilot help me analyze my research papers?',
-    },
-    {
-      position: 'left',
-      type: 'text',
-      title: 'PDF Pilot',
-      text: 'Our app allows you to ask questions, extract key information, and delve deeper into the content of your PDFs. Whether you need to quickly find relevant sections, summarize complex concepts, or uncover hidden insights, PDFPilot has got you covered. Get ready to navigate your documents with ease and unlock a whole new level of document analysis!',
-    },
-    {
-      position: 'right',
-      type: 'text',
-      title: 'User',
-      text: 'How can PDFPilot help me analyze my research papers?',
-    },
-    {
-      position: 'left',
-      type: 'text',
-      title: 'PDF Pilot',
-      text: 'Our app allows you to ask questions, extract key information, and delve deeper into the content of your PDFs. Whether you need to quickly find relevant sections, summarize complex concepts, or uncover hidden insights, PDFPilot has got you covered. Get ready to navigate your documents with ease and unlock a whole new level of document analysis!',
-    },
-  ])
+interface ChatProps {
+  id: string
+}
+
+export default function Chat({ id }: ChatProps) {
+  const [messages, setMessages] = useState<any[]>([])
   const chatRef = useRef<HTMLDivElement | null>(null)
   const inputRef = useRef<HTMLInputElement | null>(null)
+  const [loading, setLoading] = useState<boolean>(false)
 
   const handleSend = (e: any) => {
+    if (inputRef.current === null) return
+    setLoading(true)
     e.preventDefault()
-    if (inputRef?.current) {
-      setMessages([...messages, { position: 'right', title: 'User', type: 'text', text: inputRef?.current?.value }])
-      inputRef.current.value = ''
+    if (inputRef?.current.value !== '') {
+      const query = inputRef?.current.value
+      setMessages((prevMessages) => [...prevMessages, { position: 'right', title: 'User', type: 'text', text: query }])
+      const data = {
+        id: id,
+        query: query,
+      }
+      fetch('/api/query', {
+        method: 'POST',
+        body: JSON.stringify(data),
+      }).then((response) => {
+        response.json().then((data) => {
+          setMessages((prevMessages) => [
+            ...prevMessages,
+            { position: 'left', title: 'PDF Pilot', type: 'text', text: data.response.text },
+          ])
+        })
+      })
     }
+    setLoading(false)
+    inputRef.current.value = ''
   }
+
   const scrollToPage = () => {
     if (chatRef.current) {
       const pageElement = chatRef.current.querySelector('.rce-container-mbox:last-child')
@@ -116,7 +80,15 @@ export default function Chat() {
       <Box p={4} bg="gray.800" style={{ minHeight: ` 76px` }}>
         <form onSubmit={handleSend}>
           <Input
-            rightButtons={<Button type="submit" color="white" backgroundColor="black" text="Send" />}
+            rightButtons={
+              <Button
+                type="submit"
+                color="white"
+                backgroundColor="black"
+                text={`${loading ? '...' : 'Send'}`}
+                disabled={loading}
+              />
+            }
             maxHeight={500}
             referance={inputRef}
             className={'input_message'}
