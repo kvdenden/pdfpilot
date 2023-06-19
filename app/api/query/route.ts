@@ -23,9 +23,12 @@ export async function POST(req: NextRequest, res: NextResponse) {
       id: PrismaVectorStore.IdColumn,
       content: PrismaVectorStore.ContentColumn,
     },
+    filter: {
+      documentId: { equals: id },
+    },
   })
 
-  const chain = RetrievalQAChain.fromLLM(model, vectorStore.asRetriever(4, { documentId: id }))
+  const chain = RetrievalQAChain.fromLLM(model, vectorStore.asRetriever())
 
   const response = await chain.call({
     query,
