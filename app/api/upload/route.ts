@@ -1,14 +1,11 @@
 import { S3Client, PutObjectCommand, HeadObjectCommand } from '@aws-sdk/client-s3'
 import { NextRequest, NextResponse } from 'next/server'
 import { randomUUID } from 'crypto'
-import { OpenAI } from 'langchain/llms/openai'
 import { OpenAIEmbeddings } from 'langchain/embeddings/openai'
 import { PDFLoader } from 'langchain/document_loaders/fs/pdf'
 import { RecursiveCharacterTextSplitter } from 'langchain/text_splitter'
 import { PrismaVectorStore } from 'langchain/vectorstores/prisma'
 import { PrismaClient, Prisma, Document } from '@prisma/client'
-
-import { RetrievalQAChain } from 'langchain/chains'
 
 const s3Client = new S3Client({
   endpoint: process.env.S3_ENDPOINT,
@@ -35,7 +32,6 @@ export async function POST(req: NextRequest, res: NextResponse) {
   const id = randomUUID()
   const buffer = await file.arrayBuffer()
 
-  const model = new OpenAI()
   const loader = new PDFLoader(file)
 
   const textSplitter = new RecursiveCharacterTextSplitter()
@@ -57,12 +53,6 @@ export async function POST(req: NextRequest, res: NextResponse) {
     await db.$transaction(docs.map((doc) => db.document.create({ data: { documentId: id, content: doc.pageContent } }))) // TODO: add location: { pageNumber: 1, lines: { from: 1, to: 47 } }
   )
 
-  const chain = RetrievalQAChain.fromLLM(model, vectorStore.asRetriever())
-
-  const summary = await chain.call({
-    query: 'Extract the key insights from this text.',
-  })
-
   await s3Client.send(
     new PutObjectCommand({
       Bucket: process.env.S3_BUCKET_NAME,
@@ -72,7 +62,7 @@ export async function POST(req: NextRequest, res: NextResponse) {
     })
   )
 
-  return NextResponse.json({ id, url: s3Url(id), summary })
+  return NextResponse.json({ id, url: s3Url(id) })
 }
 
 export async function GET(req: NextRequest, res: NextResponse) {
